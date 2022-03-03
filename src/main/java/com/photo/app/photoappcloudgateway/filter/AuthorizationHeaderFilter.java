@@ -15,35 +15,48 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 @Component
-public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<AuthorizationHeaderFilter.AuthorizationConfig> {
+public class AuthorizationHeaderFilter
+        extends AbstractGatewayFilterFactory<AuthorizationHeaderFilter.AuthorizationConfig> {
 
     private Environment environment;
 
-    public AuthorizationHeaderFilter(Environment environment){
+    public AuthorizationHeaderFilter(Environment environment) {
         super(AuthorizationConfig.class);
         this.environment = environment;
     }
 
+    /**
+     * Method to apply for the authorization config
+     * @param config
+     * @return
+     */
     @Override
     public GatewayFilter apply(AuthorizationConfig config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
 
-            if(!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                return onError(exchange,"No Authorization Header", HttpStatus.UNAUTHORIZED);
+            if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                return onError(exchange, "No Authorization Header", HttpStatus.UNAUTHORIZED);
             }
 
             String authHeaderValue = request.getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
-            String jwtToken = authHeaderValue.replace("Bearer","");
+            String jwtToken = authHeaderValue.replace("Bearer", "");
 
-            if(!isJwtValid(jwtToken)) {
-                return onError(exchange,"No Authorization Header", HttpStatus.UNAUTHORIZED);
+            if (!isJwtValid(jwtToken)) {
+                return onError(exchange, "Invalid JWT Token", HttpStatus.UNAUTHORIZED);
             }
 
             return chain.filter(exchange);
         };
     }
 
+    /**
+     * Method to set the status code for error response
+     * @param exchange
+     * @param errorMsg
+     * @param statusCode
+     * @return
+     */
     private Mono<Void> onError(ServerWebExchange exchange, String errorMsg, HttpStatus statusCode) {
 
         ServerHttpResponse response = exchange.getResponse();
@@ -52,7 +65,12 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
         return response.setComplete();
     }
 
-    private boolean isJwtValid(String jwt){
+    /**
+     * Method to check whether the JWT token is valid
+     * @param jwt
+     * @return
+     */
+    private boolean isJwtValid(String jwt) {
         boolean returnValue = true;
 
         String subject = Jwts.parser()
@@ -61,14 +79,14 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
                 .getBody()
                 .getSubject();
 
-        if(StringUtils.isEmpty(subject)) {
+        if (StringUtils.isEmpty(subject)) {
             returnValue = false;
         }
 
         return returnValue;
     }
 
-    public static class AuthorizationConfig{
+    public static class AuthorizationConfig {
 
     }
 }
