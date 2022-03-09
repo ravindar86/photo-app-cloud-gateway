@@ -72,6 +72,8 @@ public class AuthorizationHeaderFilter
      */
     private boolean isJwtValid(String jwt) {
         boolean returnValue = true;
+        System.out.println("Token:: "+environment.getProperty("token.secret.key"));
+        System.out.println("Jwt:: "+jwt);
 
         String subject = Jwts.parser()
                 .setSigningKey(environment.getProperty("token.secret.key"))
